@@ -1,103 +1,85 @@
 package com.pluralsight;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Scanner;
+import java.util.List;
 
 public class AccountLedgerApp {
 
-    static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
         boolean running = true;
 
         while (running) {
-            System.out.println("\n===== Accounting App Home =====");
+            System.out.println("\n====== Home Screen ======");
             System.out.println("D) Add Deposit");
             System.out.println("P) Make Payment (Debit)");
             System.out.println("L) Ledger");
             System.out.println("X) Exit");
             System.out.print("Choose an option: ");
-
             String choice = scanner.nextLine().trim().toUpperCase();
 
             switch (choice) {
                 case "D":
-                    addTransaction("DEPOSIT");
+                    addTransaction(true);  // Deposit
                     break;
                 case "P":
-                    addTransaction("PAYMENT");
+                    addTransaction(false); // Payment
                     break;
                 case "L":
-                    displayLedger();
+                    showLedger();
                     break;
                 case "X":
                     running = false;
-                    System.out.println("Goodbye 👋");
+                    System.out.println("Exiting... Goodbye!");
                     break;
                 default:
-                    System.out.println("Invalid option. Try again.");
+                    System.out.println("Invalid input. Try again.");
             }
         }
-
-        scanner.close();
     }
 
-    public static void addTransaction(String type) {
-        System.out.println("\n=== " + (type.equals("DEPOSIT") ? "Add Deposit" : "Make Payment") + " ===");
+    private static void addTransaction(boolean isDeposit) {
+        System.out.print("Enter description: ");
+        String description = scanner.nextLine().trim();
 
-        String vendor = "";
-        while (vendor.isEmpty()) {
-            System.out.print("Enter vendor name: ");
-            vendor = scanner.nextLine().trim();
-            if (vendor.isEmpty()) {
-                System.out.println("Vendor name cannot be empty.");
-            }
-        }
+        System.out.print("Enter vendor: ");
+        String vendor = scanner.nextLine().trim();
 
         double amount = 0;
         boolean validAmount = false;
         while (!validAmount) {
             System.out.print("Enter amount: ");
-            String input = scanner.nextLine().trim();
+            String amtStr = scanner.nextLine().trim();
             try {
-                amount = Double.parseDouble(input);
-                if (amount <= 0) {
-                    System.out.println("Amount must be greater than 0.");
-                } else {
-                    validAmount = true;
+                amount = Double.parseDouble(amtStr);
+                if (!isDeposit) {
+                    amount = -amount;
                 }
+                validAmount = true;
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid number.");
+                System.out.println("Invalid amount. Please enter a valid number.");
             }
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        Transaction t = new Transaction(now, vendor, type, amount);
+        Transaction t = new Transaction(description, vendor, amount);
         TransactionCsv.saveTransaction(t);
-
-        System.out.println(type + " saved ✅");
+        System.out.println("Transaction saved!");
     }
 
-    public static void displayLedger() {
-        List<Transaction> transactions = TransactionCsv.readTransactions();
-
-        if (transactions.isEmpty()) {
-            System.out.println("\nNo transactions found.");
-            return;
-        }
-
+    private static void showLedger() {
         boolean inLedger = true;
 
         while (inLedger) {
-            System.out.println("\n===== Ledger Menu =====");
+            System.out.println("\n====== Ledger ======");
             System.out.println("A) All");
             System.out.println("D) Deposits");
             System.out.println("P) Payments");
             System.out.println("H) Home");
             System.out.print("Choose an option: ");
-
             String choice = scanner.nextLine().trim().toUpperCase();
+
+            List<Transaction> transactions = TransactionCsv.loadTransactions();
 
             switch (choice) {
                 case "A":
@@ -107,17 +89,17 @@ public class AccountLedgerApp {
                     }
                     break;
                 case "D":
-                    System.out.println("\n--- Deposits Only ---");
+                    System.out.println("\n--- Deposits ---");
                     for (Transaction t : transactions) {
-                        if (t.type.equals("DEPOSIT")) {
+                        if (t.getAmount() > 0) {
                             System.out.println(t);
                         }
                     }
                     break;
                 case "P":
-                    System.out.println("\n--- Payments Only ---");
+                    System.out.println("\n--- Payments ---");
                     for (Transaction t : transactions) {
-                        if (t.type.equals("PAYMENT")) {
+                        if (t.getAmount() < 0) {
                             System.out.println(t);
                         }
                     }
@@ -126,7 +108,7 @@ public class AccountLedgerApp {
                     inLedger = false;
                     break;
                 default:
-                    System.out.println("Invalid option. Try again.");
+                    System.out.println("Invalid input. Try again.");
             }
         }
     }

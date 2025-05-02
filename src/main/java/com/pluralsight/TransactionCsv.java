@@ -6,31 +6,32 @@ import java.util.Collections;
 import java.util.List;
 
 public class TransactionCsv {
-
     private static final String FILE_NAME = "transactions.csv";
 
     public static void saveTransaction(Transaction t) {
-        try (PrintWriter out = new PrintWriter(new FileWriter(FILE_NAME, true))) {
-            out.println(t.toCSV());
+        try (FileWriter fw = new FileWriter(FILE_NAME, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw)) {
+
+            out.println(t.toCSVLine());
         } catch (IOException e) {
             System.out.println("Error saving transaction: " + e.getMessage());
         }
     }
 
-    public static List<Transaction> readTransactions() {
-        List<Transaction> list = new ArrayList<>();
+    public static List<Transaction> loadTransactions() {
+        List<Transaction> transactions = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                Transaction t = Transaction.fromCSV(line);
-                list.add(t);
+            while ((line = br.readLine()) != null) {
+                transactions.add(Transaction.fromCSVLine(line));
             }
         } catch (IOException e) {
-            // It's okay if the file doesn't exist yet
+            // If file doesn't exist yet, that's fine
         }
 
-        Collections.reverse(list); // Show newest first
-        return list;
+        Collections.reverse(transactions); // Show newest first
+        return transactions;
     }
 }
